@@ -2,7 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-// const Item = require('./src/item');
+const User = require('./models/user');
+const Item = require('./models/item');
 
 // Express 애플리케이션 생성
 const app = express();
@@ -26,32 +27,42 @@ db.once('open', () => {
   console.log('MongoDB connected!');
 });
 
-// 스키마 생성
-const { Schema } = mongoose;
-const itemSchema = new Schema({
-  name: {
-    type: String,
-    required: true,
-  },
-  description: String,
-  quantity: {
-    type: Number,
-    default: 1,
-  },
-  // price: {
-  //   type: Number,
-  //   required: true,
-  // },
-});
-
-// 모델 생성
-const Item = mongoose.model('Item', itemSchema);
-
 // 요청본문파싱
 app.use(bodyParser.json());
 
-// GET 데이터 가져오기
+// 회원가입- 모든 사용자 정보를 가져옴.
+app.get('/getSignup', async (req, res) => {
+  try {
+    const users = await User.find();
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to retrieve users' });
+  }
+});
 
+// 회원가입- 새로운 사용자를 생성
+app.post('/signup', async (req, res) => {
+  // 회원가입 할 때 필요한 정보들을 client에서 가져오면 그것들을 데이터베이스에 넣어준다.
+  // const user = new User(req.body);
+  // user.save((err, userInfo) => {
+  //   if (err) return res.json({ success: false, err });
+  //   return res.status(200).json({
+  //     success: true,
+  //   });
+  // });
+  const { name, email, password } = req.body;
+
+  const user = new User({ name, email, password });
+  try {
+    await user.save();
+    res.status(201).json({ message: 'User created' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create user' });
+  }
+});
+
+//---
+// GET 데이터 가져오기
 app.get('/getItems', async (req, res) => {
   try {
     const data = await Item.find();
