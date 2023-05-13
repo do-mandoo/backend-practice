@@ -43,32 +43,44 @@ app.get('/getSignup', async (req, res) => {
 // 회원가입- 새로운 사용자를 생성
 app.post('/signup', async (req, res) => {
   // 회원가입 할 때 필요한 정보들을 client에서 가져오면 그것들을 데이터베이스에 넣어준다.
-  // const user = new User(req.body);
-  // user.save((err, userInfo) => {
-  //   if (err) return res.json({ success: false, err });
-  //   return res.status(200).json({
-  //     success: true,
-  //   });
-  // });
   const { name, email, password } = req.body;
-
   const user = new User({ name, email, password });
   try {
     await user.save();
-    res.status(201).json({ message: 'User created' });
+    res.status(201).json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to create user' });
+    res.status(500).json({ success: false, error: error });
   }
 });
+//---
+// 로그인
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    // 사용자를 데이터베이스에서 찾는다
+    const user = await User.findOne({ email });
 
+    // 사용자가 없거나 비밀번호가 일치하지 않으면 에러를 반환한다
+    if (!user || user.password !== password) {
+      return res.status(401).json({ error: '유효하지 않은 사용자 이름 또는 비밀번호입니다.' });
+    }
+
+    // 로그인 성공
+    res.status(201).json({ success: true });
+  } catch (err) {
+    // 오류 처리
+    console.error('로그인 중 오류가 발생했습니다:', err);
+    res.status(500).json({ success: false, error: err });
+  }
+});
 //---
 // GET 데이터 가져오기
 app.get('/getItems', async (req, res) => {
   try {
     const data = await Item.find();
     res.json(data);
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Server Error' });
   }
 });
@@ -76,7 +88,7 @@ app.get('/getItems', async (req, res) => {
 // 아이템 추가
 app.post('/PostItems', async (req, res) => {
   try {
-    console.log(req.body, 'req.body');
+    // console.log(req.body, 'req.body');
     // const { name } = req.body;
     // // console.log(name, idss, '_id');
 
@@ -95,8 +107,8 @@ app.post('/PostItems', async (req, res) => {
     res.send(item);
 
     // res.status(201).json({ message: '아이템이 추가되었습니다.' });
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: '서버 에러' });
   }
 });
@@ -119,8 +131,8 @@ app.delete('/deleteItems/:id', async (req, res) => {
     //   await item.remove();
 
     //   res.status(200).json({ message: '아이템이 삭제되었습니다.' });
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: '서버 에러' });
   }
   //---
