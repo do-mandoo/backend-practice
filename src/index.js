@@ -1,9 +1,13 @@
+require('dotenv').config(); // .env 파일 로드
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const User = require('./models/user');
 const Item = require('./models/item');
+const saltRounds = 10;
 
 // Express 애플리케이션 생성
 const app = express();
@@ -43,9 +47,18 @@ app.get('/getSignup', async (req, res) => {
 // 회원가입- 새로운 사용자를 생성
 app.post('/signup', async (req, res) => {
   // 회원가입 할 때 필요한 정보들을 client에서 가져오면 그것들을 데이터베이스에 넣어준다.
-  const { name, email, password } = req.body;
-  const user = new User({ name, email, password });
   try {
+    const { name, email, password } = req.body;
+    // 이미 있는 name과 email인지 확인.
+    const existingUser = await User.findOne({ $or: [{ name }, { email }] });
+    if (existingUser) {
+      return res.status(409).json({ message: 'Name or Email already exists!' });
+    }
+    // salt를 생성하고 password를 hash 함.
+    const salt = await bcrypt.genSalt(saltRounds);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    // 데이터베이스에 사용자를 저장.
+    const user = new User({ name, email, password: hashedPassword });
     await user.save();
     res.status(201).json({ success: true });
   } catch (error) {
@@ -58,19 +71,27 @@ app.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     // 사용자를 데이터베이스에서 찾는다
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email });
 
     // 사용자가 없거나 비밀번호가 일치하지 않으면 에러를 반환한다
-    if (!user || user.password !== password) {
-      return res.status(401).json({ error: '유효하지 않은 사용자 이름 또는 비밀번호입니다.' });
+    if (!user) {
+      return res.status(401).json({ message: '이메일 혹은 비밀번호를 다시 확인하세요.' });
+    }
+    // passwords를 Compare함.
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ message: '유효하지 않은 이메일 또는 비밀번호입니다.' });
     }
 
+    // JWT를 token에 저장.
+    const token = jwt.sign({ email }, process.env.JWT_SECRET);
+
     // 로그인 성공
-    res.status(201).json({ success: true });
+    res.status(200).json({ success: true, token });
   } catch (err) {
     // 오류 처리
     console.error('로그인 중 오류가 발생했습니다:', err);
-    res.status(500).json({ success: false, error: err });
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 //---
