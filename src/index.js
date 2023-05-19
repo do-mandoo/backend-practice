@@ -95,6 +95,54 @@ app.post('/login', async (req, res) => {
   }
 });
 //---
+// POST 사용자 정보 수정
+app.post('/userInfoUpdate/:id', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { name, password } = req.body;
+
+    // 비밀번호 암호화
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // 사용자 식별을 위해 이메일로 사용자를 찾음
+    const user = await User.findOne({ email: userId });
+
+    if (!user) {
+      return res.status(404).send('사용자를 찾을 수 없습니다.');
+    }
+
+    // 사용자 정보 수정
+    user.name = name;
+    user.password = hashedPassword;
+
+    await user.save();
+
+    res.status(201).json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('서버 오류');
+  }
+});
+// GET 로그인한 정보만 가져오기
+app.get('/profile/:id', async (req, res) => {
+  try {
+    // 로그인한 사용자의 아이디 가져오기
+    const userId = req.params.id;
+
+    // 사용자 정보 조회
+    const user = await User.findOne({ email: userId });
+
+    if (!user) {
+      return res.status(404).send('사용자를 찾을 수 없습니다.');
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('서버 오류');
+  }
+});
+//---
 // GET 데이터 가져오기
 app.get('/getItems', async (req, res) => {
   try {
