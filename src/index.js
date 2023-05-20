@@ -85,13 +85,22 @@ app.post('/login', async (req, res) => {
 
     // JWT를 token에 저장.
     const token = jwt.sign({ email }, process.env.JWT_SECRET);
-
+    // res.cookie('token', token);
     // 로그인 성공
     res.status(200).json({ success: true, token });
   } catch (err) {
     // 오류 처리
     console.error('로그인 중 오류가 발생했습니다:', err);
     res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+// 로그아웃
+app.post('/logout', async (req, res) => {
+  try {
+    // res.clearCookie('token');
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.log(error, 'error');
   }
 });
 //---
