@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 // 스키마 생성
 const { Schema } = mongoose;
-const ItemSchema = new Schema({
+const CartItemSchema = new Schema({
   name: {
     type: String,
     required: true,
@@ -18,5 +18,5 @@ const ItemSchema = new Schema({
 });
 
 // 모델 생성
-const Item = mongoose.model('Item', ItemSchema);
-module.exports = Item;
+const CartItem = mongoose.model('CartItem', CartItemSchema);
+module.exports = CartItem;
