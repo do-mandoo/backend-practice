@@ -18,7 +18,7 @@ const app = express();
 app.use(cors()); // 모든 도메인에서의 요청을 허용합니다.
 
 // 이미지 저장
-app.use('public/images', express.static('public/images'));
+app.use('/uploads', express.static('uploads'));
 
 // MongoDB와 연결
 mongoose.connect('mongodb://localhost:27017/cartPractice', {
@@ -42,9 +42,6 @@ app.use(bodyParser.json());
 
 // 이미지를 저장할 디렉토리와 파일 이름 설정
 const storage = multer.diskStorage({
-  // destination: function (req, file, cb) {
-  //   cb(null, 'public/images/'); // 업로드된 파일이 저장될 경로 설정
-  // },
   destination: path.join(__dirname, 'uploads'),
   filename: function (req, file, cb) {
     const uniqueFileName = Date.now() + path.extname(file.originalname); // 고유한 파일 이름 생성
@@ -119,13 +116,35 @@ app.get('/getAllProduct', async (req, res) => {
   }
 });
 
+// 상품 이미지 가져오기
+// app.get('/images/:filename', (req, res) => {
+//   const filename = req.params.filename;
+//   const imagePath = path.join(__dirname, 'uploads', filename);
+
+//   fs.readFile(imagePath, (err, data) => {
+//     if (err) {
+//       console.error(err);
+//       res.status(500).json({ error: '이미지를 불러오는 데 실패했습니다.' });
+//     } else {
+//       res.writeHead(200, { 'Content-Type': 'image/jpeg' });
+//       res.end(data);
+//     }
+//   });
+// });
+app.get('/uploads/:filename', (req, res) => {
+  const { filename } = req.params;
+  const imagePath = path.join(__dirname, 'uploads', filename);
+  res.sendFile(imagePath);
+});
+
 // 관리자의 상품 추가
 app.post('/adminAddProduct', upload.single('image'), async (req, res) => {
   try {
     const { name, description } = req.body;
 
     // 업로드된 이미지 파일 경로 가져오기
-    const image = req.file.path;
+    // const image = req.file.filename; // 파일 이름만 사용
+    const image = req.file.path; // 파일 경로
 
     // 상품 생성
     const product = await ProductItem.create({
@@ -168,6 +187,7 @@ app.put('/updateProduct/:id', async (req, res) => {
 // 관리자의 상품 삭제
 app.delete('/deleteProducts/:id', async (req, res) => {
   try {
+    console.log(req.params.id, 'delete product');
     const { id } = req.params;
 
     // 상품 삭제
@@ -192,15 +212,16 @@ app.post('/login', async (req, res) => {
     if (!user) {
       return res.status(401).json({ message: '이메일 혹은 비밀번호를 다시 확인하세요.' });
     }
-    // passwords를 Compare함.
+
+    // 비밀번호 일치 여부를 확인한다
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       return res.status(401).json({ message: '유효하지 않은 이메일 또는 비밀번호입니다.' });
     }
 
-    // JWT를 token에 저장.
+    // JWT를 발급하여 토큰으로 반환한다
     const token = jwt.sign({ email }, process.env.JWT_SECRET);
-    // res.cookie('token', token);
+
     // 로그인 성공
     res.status(200).json({ success: true, token });
   } catch (err) {
