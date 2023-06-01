@@ -7,6 +7,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const User = require('./models/user');
 const CartItem = require('./models/cartItem');
 const ProductItem = require('./models/product');
@@ -117,24 +118,27 @@ app.get('/getAllProduct', async (req, res) => {
 });
 
 // 상품 이미지 가져오기
-// app.get('/images/:filename', (req, res) => {
-//   const filename = req.params.filename;
-//   const imagePath = path.join(__dirname, 'uploads', filename);
-
-//   fs.readFile(imagePath, (err, data) => {
-//     if (err) {
-//       console.error(err);
-//       res.status(500).json({ error: '이미지를 불러오는 데 실패했습니다.' });
-//     } else {
-//       res.writeHead(200, { 'Content-Type': 'image/jpeg' });
-//       res.end(data);
-//     }
-//   });
-// });
 app.get('/uploads/:filename', (req, res) => {
   const { filename } = req.params;
   const imagePath = path.join(__dirname, 'uploads', filename);
   res.sendFile(imagePath);
+});
+
+// 상품 상세 가져오기
+app.get('/product/:id', async (req, res) => {
+  try {
+    const productId = req.params.id;
+    console.log(productId, '프로젝트id');
+    const product = await ProductItem.findOne({ _id: productId });
+    if (!product) {
+      return res.status(404).send('상품을 찾을 수 없습니다.');
+    }
+
+    res.status(200).json(product);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('서버 오류');
+  }
 });
 
 // 관리자의 상품 추가
@@ -161,18 +165,34 @@ app.post('/adminAddProduct', upload.single('image'), async (req, res) => {
 });
 
 // 관리자의 상품 수정(이름 및 설명)
-app.put('/updateProduct/:id', async (req, res) => {
+app.put('/updateProduct/:id', upload.single('image'), async (req, res) => {
   try {
-    const { id } = req.body; // -?????????
-    const { name, description, image } = req.body;
+    // const productId = req.params.id;
+    // const { name, description } = req.body;
+    // const image = req.file.path; // 파일 경로
+    // // 상품 업데이트
+    // const product = await ProductItem.findByIdAndUpdate(
+    //   productId,
+    //   {
+    //     name,
+    //     description,
+    //     image,
+    //   },
+    //   { new: true }
+    // );
+    // res.json(product);
+
+    const productId = req.params.id;
+    const { name, description } = req.body;
+    const image = req.file ? req.file.path : undefined; // 파일 경로
 
     // 상품 업데이트
     const product = await ProductItem.findByIdAndUpdate(
-      id,
+      productId,
       {
         name,
         description,
-        image,
+        ...(image && { image }), // image가 존재할 경우에만 업데이트
       },
       { new: true }
     );
@@ -187,8 +207,24 @@ app.put('/updateProduct/:id', async (req, res) => {
 // 관리자의 상품 삭제
 app.delete('/deleteProducts/:id', async (req, res) => {
   try {
-    console.log(req.params.id, 'delete product');
+    // console.log(req.params.id, 'delete product');
     const { id } = req.params;
+
+    // // 상품 삭제
+    // await ProductItem.findByIdAndDelete(id);
+
+    // 상품 조회
+    const product = await ProductItem.findById(id);
+
+    if (!product) {
+      return res.status(404).json({ error: '상품을 찾을 수 없습니다.' });
+    }
+
+    // 삭제 시 src>uploads의 이미지 파일도 함께 삭제
+    const imagePath = product.image;
+    if (fs.existsSync(imagePath)) {
+      fs.unlinkSync(imagePath);
+    }
 
     // 상품 삭제
     await ProductItem.findByIdAndDelete(id);
