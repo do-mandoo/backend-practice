@@ -19,6 +19,7 @@
   },
   "scripts": {
     "start": "node src",
-    "start:dev" : "nodemon --watch src/ src/index.js"
+    "start:dev" : "nodemon --watch src/ src/index.js",
+    "heroku-prebuild":"npm install"
   }
 }
