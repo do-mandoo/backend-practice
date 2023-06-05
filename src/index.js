@@ -128,7 +128,6 @@ app.get('/uploads/:filename', (req, res) => {
 app.get('/product/:id', async (req, res) => {
   try {
     const productId = req.params.id;
-    console.log(productId, '프로젝트id');
     const product = await ProductItem.findOne({ _id: productId });
     if (!product) {
       return res.status(404).send('상품을 찾을 수 없습니다.');
@@ -147,7 +146,6 @@ app.post('/adminAddProduct', upload.single('image'), async (req, res) => {
     const { name, description } = req.body;
 
     // 업로드된 이미지 파일 경로 가져오기
-    // const image = req.file.filename; // 파일 이름만 사용
     const image = req.file.path; // 파일 경로
 
     // 상품 생성
@@ -167,21 +165,6 @@ app.post('/adminAddProduct', upload.single('image'), async (req, res) => {
 // 관리자의 상품 수정(이름 및 설명)
 app.put('/updateProduct/:id', upload.single('image'), async (req, res) => {
   try {
-    // const productId = req.params.id;
-    // const { name, description } = req.body;
-    // const image = req.file.path; // 파일 경로
-    // // 상품 업데이트
-    // const product = await ProductItem.findByIdAndUpdate(
-    //   productId,
-    //   {
-    //     name,
-    //     description,
-    //     image,
-    //   },
-    //   { new: true }
-    // );
-    // res.json(product);
-
     const productId = req.params.id;
     const { name, description } = req.body;
     const image = req.file ? req.file.path : undefined; // 파일 경로
@@ -207,11 +190,7 @@ app.put('/updateProduct/:id', upload.single('image'), async (req, res) => {
 // 관리자의 상품 삭제
 app.delete('/deleteProducts/:id', async (req, res) => {
   try {
-    // console.log(req.params.id, 'delete product');
     const { id } = req.params;
-
-    // // 상품 삭제
-    // await ProductItem.findByIdAndDelete(id);
 
     // 상품 조회
     const product = await ProductItem.findById(id);
@@ -366,7 +345,7 @@ app.post('/PostItems', async (req, res) => {
 // 장바구니의 아이템 삭제
 app.delete('/deleteItems/:id', async (req, res) => {
   try {
-    console.log(req.params.id, 'delete req');
+    // console.log(req.params.id, 'delete req');
     const data = await CartItem.findByIdAndDelete(req.params.id);
     res.send(data);
     //   const { id } = req.params;
@@ -393,7 +372,7 @@ app.put('/increase/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const item = await CartItem.findById(id);
-    console.log(item, 'itme');
+    // console.log(item, 'itme');
     if (!item) throw new Error('CartItem not found');
     item.quantity += 1;
     await item.save();
